@@ -1,9 +1,9 @@
-import matplotlib
-matplotlib.use('TkAgg')  # 或者使用 'Agg' 后端
-
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import cumulative_trapezoid
+import matplotlib
+
+matplotlib.use('TkAgg')  # 或者使用 'Agg' 后端
 
 
 # 定义硬度随时间变化的函数（指数衰减）
@@ -34,7 +34,7 @@ def ackermann_wear_with_area_hardness_diffusion(F, d, A, H, K, n, m, p, q, D, t)
     t: 时间 (秒)
     """
     # 考虑扩散效应的磨损量：扩散效应会改变磨损的分布
-    W = K * (F ** n) * (d ** m) * (A ** p) * (H ** q) * (1 + D * t)
+    W = K * (F ** n) * d * (A ** p) * (H ** q) * (1 + D * t)
     return W
 
 
@@ -46,11 +46,14 @@ d_values = np.linspace(1, 100, 10)  # 滑动距离从1m到100m
 A_values = np.linspace(0.01, 0.1, 10)  # 接触面积从0.01 m^2到0.1 m^2
 K = 0.01  # 假设磨损系数为0.01
 n = 0.5  # 假设法向力的指数为0.5
-m = 0.3  # 假设滑动距离的指数为0.3
 p = 0.2  # 假设接触面积的指数为0.2
 q = -0.1  # 假设硬度的指数为-0.1（硬度越高，磨损越小）
 D = 0.1  # 假设扩散系数
-t_values = np.linspace(0, 10, 1000)  # 时间从0到10秒
+# 参数设置
+m = 1.0  # 物体质量 (kg)
+g = 9.81  # 重力加速度 (m/s^2)
+omega = 2 * np.pi  # 角频率 (假设单位为 rad/s)
+t_values = np.linspace(0, 10, 1000)  # 时间数组，范围 0 到 10 秒
 
 # 生成网格，确保每个维度的形状正确
 F_grid, D_grid, A_grid, H_grid = np.meshgrid(F_values, d_values, A_values, t_values, indexing='ij')
@@ -63,8 +66,13 @@ W_matrix = ackermann_wear_with_area_hardness_diffusion(F_grid, D_grid, A_grid, H
                                                        t_values)
 
 # 计算法向力随时间的累积值
-F_time_values = 10 * np.sin(t_values)  # 假设法向力随时间变化
-F_cumulative_values = cumulative_trapezoid(F_time_values, t_values, initial=0)
+
+
+# 计算法向力 Fn(t)
+F_n_values = m * g * (1 + np.sin(omega * t_values))
+
+# 计算法向力的累积值
+F_cumulative_values = cumulative_trapezoid(F_n_values, t_values, initial=0)
 
 # 绘制法向力的累积效果
 plt.figure(figsize=(10, 6))
